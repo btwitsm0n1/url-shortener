@@ -1,4 +1,7 @@
-# URL Shortener Service
+<img width="1200" height="630" alt="url-shortener-banner" src="https://github.com/user-attachments/assets/8077561a-2fb9-44ac-831a-9e36e9d278b2" />
+
+
+
 
 A Spring Boot based URL shortening service with Base62 encoding, Redis caching,
 and a custom Token Bucket rate limiter — built to demonstrate core system
