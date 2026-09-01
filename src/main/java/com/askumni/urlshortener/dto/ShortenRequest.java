@@ -1,4 +1,5 @@
 package com.askumni.urlshortener.dto;
+import jakarta.validation.constraints.Min;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -18,5 +19,6 @@ public class ShortenRequest {
     private String customAlias;
 
     // Optional: how many days until this link expires
+    @Min(value = 1, message = "expiryDays must be at least 1")
     private Integer expiryDays;
 }
