@@ -1,5 +1,6 @@
 package com.askumni.urlshortener.controller;
 
+import com.askumni.urlshortener.dto.AnalyticsResponse;
 import com.askumni.urlshortener.dto.ShortenRequest;
 import com.askumni.urlshortener.dto.ShortenResponse;
 import com.askumni.urlshortener.service.UrlShortenerService;
@@ -17,8 +18,24 @@ public class UrlShortenerController {
     private final UrlShortenerService urlShortenerService;
 
     @PostMapping("/shorten")
-    public ResponseEntity<ShortenResponse> shortenUrl(@Valid @RequestBody ShortenRequest request) {
-        ShortenResponse response = urlShortenerService.shortenUrl(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    public ResponseEntity<ShortenResponse> shortenUrl(
+            @Valid @RequestBody ShortenRequest request) {
+
+        ShortenResponse response =
+                urlShortenerService.shortenUrl(request);
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(response);
+    }
+
+    @GetMapping("/analytics/{shortCode}")
+    public ResponseEntity<AnalyticsResponse> getAnalytics(
+            @PathVariable String shortCode) {
+
+        AnalyticsResponse response =
+                urlShortenerService.getAnalytics(shortCode);
+
+        return ResponseEntity.ok(response);
     }
 }
