@@ -1,6 +1,6 @@
+
 package com.askumni.urlshortener.controller;
 
-import com.askumni.urlshortener.dto.AnalyticsResponse;
 import com.askumni.urlshortener.dto.ShortenRequest;
 import com.askumni.urlshortener.dto.ShortenResponse;
 import com.askumni.urlshortener.service.UrlShortenerService;
@@ -29,13 +29,12 @@ public class UrlShortenerController {
                 .body(response);
     }
 
-    @GetMapping("/analytics/{shortCode}")
-    public ResponseEntity<AnalyticsResponse> getAnalytics(
+    @DeleteMapping("/shorten/{shortCode}")
+    public ResponseEntity<Void> deleteUrl(
             @PathVariable String shortCode) {
 
-        AnalyticsResponse response =
-                urlShortenerService.getAnalytics(shortCode);
+        urlShortenerService.deleteUrl(shortCode);
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.noContent().build();
     }
 }
