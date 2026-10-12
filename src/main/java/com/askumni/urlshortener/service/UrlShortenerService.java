@@ -1,6 +1,6 @@
+
 package com.askumni.urlshortener.service;
 
-import com.askumni.urlshortener.dto.AnalyticsResponse;
 import com.askumni.urlshortener.dto.ShortenRequest;
 import com.askumni.urlshortener.dto.ShortenResponse;
 import com.askumni.urlshortener.entity.UrlMapping;
@@ -28,14 +28,6 @@ public class UrlShortenerService {
     @Value("${app.default-expiry-days}")
     private int defaultExpiryDays;
 
-    /**
-     * Creates a short URL.
-     * Flow:
-     * 1. If user gives a custom alias, check whether it already exists.
-     * 2. If no custom alias is given, save the mapping first to get the DB ID.
-     * 3. Convert the generated ID into a Base62 short code.
-     * 4. Save the final short code.
-     */
     public ShortenResponse shortenUrl(ShortenRequest request) {
 
         int expiryDays = request.getExpiryDays() != null
@@ -47,7 +39,6 @@ public class UrlShortenerService {
 
         UrlMapping mapping;
 
-        // Custom alias
         if (request.getCustomAlias() != null
                 && !request.getCustomAlias().isBlank()) {
 
@@ -58,7 +49,6 @@ public class UrlShortenerService {
             }
 
             mapping = new UrlMapping();
-
             mapping.setOriginalUrl(request.getOriginalUrl());
             mapping.setShortCode(request.getCustomAlias());
             mapping.setCustomAlias(true);
@@ -69,18 +59,14 @@ public class UrlShortenerService {
 
         } else {
 
-            // Auto-generated short code
             mapping = new UrlMapping();
-
             mapping.setOriginalUrl(request.getOriginalUrl());
             mapping.setShortCode("PENDING");
             mapping.setExpiresAt(expiresAt);
             mapping.setClickCount(0L);
 
-            // Save first so that database generates the ID
             mapping = repository.save(mapping);
 
-            // Convert ID to Base62
             String shortCode =
                     base62Encoder.encode(mapping.getId());
 
@@ -96,23 +82,16 @@ public class UrlShortenerService {
         );
     }
 
-    /**
-     * Resolves a short code to the original URL.
-     *
-     * Redis caches the result so repeated requests
-     * can avoid hitting the database.
-     */
     @Cacheable(value = "shortUrl", key = "#shortCode")
     public String resolveOriginalUrl(String shortCode) {
 
         UrlMapping mapping = repository.findByShortCode(shortCode)
                 .orElseThrow(() ->
-                        new UrlNotFoundException(shortCode)
-                );
+                        new UrlNotFoundException(shortCode));
 
-        // Check expiry
         if (mapping.getExpiresAt() != null
-                && mapping.getExpiresAt().isBefore(LocalDateTime.now())) {
+                && mapping.getExpiresAt()
+                .isBefore(LocalDateTime.now())) {
 
             throw new UrlNotFoundException(shortCode);
         }
@@ -120,9 +99,6 @@ public class UrlShortenerService {
         return mapping.getOriginalUrl();
     }
 
-    /**
-     * Increments the click count for a short URL.
-     */
     public void incrementClickCount(String shortCode) {
 
         repository.findByShortCode(shortCode)
@@ -136,30 +112,19 @@ public class UrlShortenerService {
                 });
     }
 
-    /**
-     * Returns analytics information for a short URL.
-     */
-    public AnalyticsResponse getAnalytics(String shortCode) {
+    @CacheEvict(value = "shortUrl", key = "#shortCode")
+    public void evictCache(String shortCode) {
+        // Removes the cached URL for this short code.
+    }
+
+    public void deleteUrl(String shortCode) {
 
         UrlMapping mapping = repository.findByShortCode(shortCode)
                 .orElseThrow(() ->
-                        new UrlNotFoundException(shortCode)
-                );
+                        new UrlNotFoundException(shortCode));
 
-        return new AnalyticsResponse(
-                mapping.getShortCode(),
-                mapping.getOriginalUrl(),
-                mapping.getClickCount()
-        );
-    }
+        repository.delete(mapping);
 
-    /**
-     * Removes a short URL from Redis cache.
-     * Useful when a mapping is updated or deleted.
-     */
-    @CacheEvict(value = "shortUrl", key = "#shortCode")
-    public void evictCache(String shortCode) {
-
-        // Cache eviction happens automatically.
+        evictCache(shortCode);
     }
 }
